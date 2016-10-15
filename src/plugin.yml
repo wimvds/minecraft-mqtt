@@ -1,0 +1,9 @@
+name: MQTT
+main: be.bonjourmicro.mqtt.Mqtt
+version: 0.1
+description: A very basic mqtt plugin
+
+commands:
+    sendmqtt:
+        usage: /<command> <topic> <payload>
+        description: Send a payload to an mqtt topic
