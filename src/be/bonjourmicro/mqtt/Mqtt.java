@@ -1,15 +1,12 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package be.bonjourmicro.mqtt;
 
+import java.util.StringJoiner;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 /**
  *
@@ -17,16 +14,30 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class Mqtt extends JavaPlugin {
 
+    MinecraftMqttClient client;
+    
+    final String BROKER_URL = "tcp://192.168.1.11:1883";
+    final String TOPIC = "demo/minecraft";
+    final String CLIENT_ID = "MinecraftMQTT";
+
     @Override
     public void onEnable() {
-        Bukkit.getServer().getLogger().info("Mqtt plugin enabled! - We should probably connect to MQTT broker here");
-        
         // Bukkit.getServer().getPluginManager().registerEvents(this, this);
+        client = new MinecraftMqttClient(Bukkit.getServer().getLogger());
+        try {
+            client.setup(BROKER_URL, CLIENT_ID, TOPIC);
+        } catch (MqttException e) {
+            Bukkit.getServer().getLogger().severe("Failed setting up connnection with MQTT broker!");
+        }
     }
 
     @Override
     public void onDisable() {
-        Bukkit.getServer().getLogger().info("Mqtt plugin disabled! - We should probably disconnect from MQTT broker here");
+        try {
+            client.disconnect();            
+        } catch (MqttException e) {
+            Bukkit.getServer().getLogger().severe("Failed disconnecting from MQTT broker!");
+        }
     }
 
     @Override
@@ -45,9 +56,18 @@ public class Mqtt extends JavaPlugin {
 
             return false;
         }
-        // TODO : Actually send payload via MQTT
-        sender.sendMessage(ChatColor.GREEN + "Sending payload " + args[1] + " to topic " + args[0]);
-        
+
+        try {
+            StringJoiner joiner = new StringJoiner(" ");
+            for (int i=1; i<args.length; i++) {
+                joiner.add(args[i]);                
+            }
+            sender.sendMessage(ChatColor.GREEN + "Sending payload " + joiner.toString() + " to topic " + args[0]);
+            client.send(args[0], joiner.toString());
+        } catch (MqttException e) {
+            Bukkit.getServer().getLogger().severe("Failed sending message to MQTT broker!");
+        }
+
         return true;
     }
     
